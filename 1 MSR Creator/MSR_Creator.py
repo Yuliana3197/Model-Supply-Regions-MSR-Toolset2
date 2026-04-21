@@ -36,6 +36,8 @@ from osgeo import osr
 # import warnings
 # warnings.filterwarnings("ignore")
 
+
+
 def quadrat_cut_geometry(geometry, quadrat_width):
     #Code adopted from OSMNX with alterations:https://osmnx.readthedocs.io/en/stable/index.html
 
