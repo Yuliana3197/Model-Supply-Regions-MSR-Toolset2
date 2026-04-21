@@ -1,0 +1,15 @@
+*.csv
+*.xlsx
+*.tif
+*.prj
+*.cpg
+*.shp
+*.xml
+*.sbn
+*.sbx
+*.qpj
+*.qmd
+*.dbf
+*.shx
+*.nc
+*.Identifier
