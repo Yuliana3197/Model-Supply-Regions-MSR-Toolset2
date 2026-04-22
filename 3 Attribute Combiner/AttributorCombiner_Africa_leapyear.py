@@ -111,7 +111,7 @@ if Flag_RunSolarPV:
             pd_LogFile=pd_LogFile.append(pd.DataFrame(["%s: Skipped %s" % (SolarPVNameConvention, country)], columns=['Log']))
             pass
     if AnalysisLevel == "country":
-        gdf.to_file(OutputFolder+"\\SolarPV_prescreen.shp")
+        gdf.to_file(OutputFolder+"\\SolarPV_prescreen_country.shp")
     else:
         gdf.to_file(OutputFolder+"\\SolarPV_prescreen_region.shp")
  
