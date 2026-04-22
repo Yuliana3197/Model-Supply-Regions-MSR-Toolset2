@@ -154,6 +154,93 @@ def PolygonizeResourcePotential(Path_ResourcePotentialRaster,SubFolder_Polygoniz
 def MinimumDistanceOfMSRCentroidFromGivenGeometrySet(gpd_MSRCentroid, gpd_GeometrySet): #Geometry can be point, line or polygon or mixed
     return gpd_GeometrySet.distance(gpd_MSRCentroid).min()
 
+# Function to calculate the percentage distribution of land cover class
+def LandCoverDistributionForMSR(msr_geom, landcover_raster):
+    try:
+        with rasterio.open(landcover_raster) as src:
+            out_image, _ = rasterio.mask.mask(src,[msr_geom.__geo_interface__], crop=True, all_touched=True)
+            data = out_image[0]
+            nodata = src.nodata
+
+        if np.ma.isMaskedArray(data):
+            data = data.compressed()
+
+        if nodata is not None:
+            data = data[data != nodata]
+
+        if data.size == 0:
+            return {}
+
+        unique, counts = np.unique(data, return_counts=True)
+        total = counts.sum()
+
+        return {
+            int(k): (v / total) * 100
+            for k, v in zip(unique, counts)
+        }
+
+    except Exception as e:
+        print(f"Warning: failed to compute land-use for one MSR: {e}")
+        return {}
+    
+# Function to calculate the min, max and mean elevation
+def ElevationStatsForMSR(msr_geom, elevation_raster):
+    try:
+        with rasterio.open(elevation_raster) as src:
+            out_image, _ = rasterio.mask.mask(src, [msr_geom.__geo_interface__], crop=True, all_touched=True)
+            data = out_image[0]
+            nodata = src.nodata
+
+        # Handle masked arrays
+        if np.ma.isMaskedArray(data):
+            data = data.compressed()
+
+        if nodata is not None:
+            data = data[data != nodata]
+
+        if data.size == 0:
+            return np.nan, np.nan, np.nan
+
+        return (
+            float(np.mean(data)),
+            float(np.min(data)),
+            float(np.max(data)),
+        )
+
+    except Exception as e:
+        print(f"Warning: elevation failed for one MSR: {e}")
+        return np.nan, np.nan, np.nan
+
+# Function to calculate the percentage distribution of climate zones   
+def KoppenDistributionForMSR(msr_geom, koppen_raster):
+    try:
+        with rasterio.open(koppen_raster) as src:
+            out_image, _ = rasterio.mask.mask(src, [msr_geom.__geo_interface__], crop=True, all_touched=True)
+            data = out_image[0]
+            nodata = src.nodata
+
+        if np.ma.isMaskedArray(data):
+            data = data.compressed()
+
+        if nodata is not None:
+            data = data[data != nodata]
+
+        if data.size == 0:
+            return {}
+
+        unique, counts = np.unique(data, return_counts=True)
+        total = counts.sum()
+
+        return {
+            int(k): (v / total) * 100
+            for k, v in zip(unique, counts)
+        }
+
+    except Exception as e:
+        print(f"Warning: Köppen failed for one MSR: {e}")
+        return {}
+
+
 def ComputeLoadCenterAttributesForMSRCentroid(gpd_MSRCentroid, gpd_LoadCenters):
     pd_LoadCenterDistances= gpd_LoadCenters.geometry.distance(gpd_MSRCentroid)/1000
     bestDistance = pd_LoadCenterDistances.min()
