@@ -47,21 +47,34 @@ pd_LogFile=pd.DataFrame()
 DateTimeStamp = time.localtime()
 DateTimeStamp = "%s%s%s%s%s%s" % (DateTimeStamp.tm_year, DateTimeStamp.tm_mon, DateTimeStamp.tm_mday, DateTimeStamp.tm_hour, DateTimeStamp.tm_min,DateTimeStamp.tm_sec)
 
+if AnalysisLevel == "country":
+    Units = Countries.Ct.tolist()
+elif AnalysisLevel == "region":
+    Units = Regions.to_dict("records")
+
 if Flag_RunSolarPV:
     gdf= gpd.GeoDataFrame()
-    for i in range (0,len(Countries)):
-        country_WithSpaces=Countries.Ct[i]
-        country = country_WithSpaces.replace(" ", "")
+    for unit in Units:
+        if AnalysisLevel == "country":
+            region = None
+            country = unit.replace(" ", "")
+            base_path = f"{Input_MSR_Folder}\\{country}"
+        else:
+            country = unit["Country"].replace(" ", "")
+            region = unit["Region"].replace(" ", "")
+            base_path = f"{Input_MSR_Folder}\\region_{country}\\{region}"
+
         try:
-            if glob.glob("%s\\%s\\%s\\%s"%(Input_MSR_Folder, country, MSR_DataCarryingSubFolderName,SolarPVNameConvention) + MSR_ShapeFileNameSuffix): #single iteration loop
-                file_to_read=glob.glob("%s\\%s\\%s\\%s"%(Input_MSR_Folder, country, MSR_DataCarryingSubFolderName,SolarPVNameConvention) + MSR_ShapeFileNameSuffix)[0]
+            if glob.glob("%s\\%s\\%s"%(base_path, MSR_DataCarryingSubFolderName,SolarPVNameConvention) + MSR_ShapeFileNameSuffix): #single iteration loop
+                file_to_read=glob.glob("%s\\%s\\%s"%(base_path, MSR_DataCarryingSubFolderName,SolarPVNameConvention) + MSR_ShapeFileNameSuffix)[0]
                 print("SolarPV:"+file_to_read)
                 gdf_SingleCountry = gpd.read_file(file_to_read)
                 gdf_SingleCountry=gdf_SingleCountry.sort_values(by=['FID'])
 
                 gdf_SingleCountry['CtryName'] = country
-
-                dc_GHI_ZoneStats_withSolarGIS = zonal_stats(file_to_read,r"%s\%s\%s\%s_GHI_projected.tif"%(Input_MSR_Folder,country,ResourceRasterCarryingSubFolderName,SolarPVNameConvention),stats="count min mean max median sum")
+                if AnalysisLevel == "region":
+                    gdf_SingleCountry['Region'] = region
+                dc_GHI_ZoneStats_withSolarGIS = zonal_stats(file_to_read,r"%s\%s\%s_GHI_projected.tif"%(base_path,ResourceRasterCarryingSubFolderName,SolarPVNameConvention),stats="count min mean max median sum")
 
                 MeanResource_AverageAcrossMSR=pd.DataFrame(index=gdf_SingleCountry.index,columns=["ZoneMean_KWh/d-m2"])
                 for j in range (0, len(gdf_SingleCountry)):
@@ -94,28 +107,40 @@ if Flag_RunSolarPV:
 
                 gdf = gpd.GeoDataFrame(pd.concat([gdf, gdf_SingleCountry]))
         except:
-            print("Skipped %s" % country)
+            print(f"Skipped  {country} {region if 'region' in locals() and region else ''}")
             pd_LogFile=pd_LogFile.append(pd.DataFrame(["%s: Skipped %s" % (SolarPVNameConvention, country)], columns=['Log']))
             pass
-    gdf.to_file(OutputFolder+"\\SolarPV_prescreen.shp")
-    pd_LogFile.to_csv(OutputFolder + '\\'+DateTimeStamp+'solarpv_LogFile.csv')
+    if AnalysisLevel == "country":
+        gdf.to_file(OutputFolder+"\\SolarPV_prescreen.shp")
+    else:
+        gdf.to_file(OutputFolder+"\\SolarPV_prescreen_region.shp")
+ 
+    pd_LogFile.to_csv(OutputFolder + f'\\{DateTimeStamp}_solarpv_{AnalysisLevel}_LogFile.csv')
 
 if Flag_RunWind:
     gdf= gpd.GeoDataFrame()
-    for i in range (0,len(Countries)):
-        country_WithSpaces=Countries.Ct[i]
-        country = country_WithSpaces.replace(" ", "")
+    for unit in Units:
+        if AnalysisLevel == "country":
+            region = None
+            country = unit.replace(" ", "")
+            base_path = f"{Input_MSR_Folder}\\{country}"
+        else:
+            country = unit["Country"].replace(" ", "")
+            region = unit["Region"].replace(" ", "")
+            base_path = f"{Input_MSR_Folder}\\region_{country}\\{region}"
 
         try:
-            if glob.glob("%s\\%s\\%s\\%s"%(Input_MSR_Folder, country, MSR_DataCarryingSubFolderName, WindNameConvention) + MSR_ShapeFileNameSuffix): #single iteration loop
-                file_to_read=glob.glob("%s\\%s\\%s\\%s"%(Input_MSR_Folder, country, MSR_DataCarryingSubFolderName, WindNameConvention) + MSR_ShapeFileNameSuffix)[0]
+            if glob.glob("%s\\%s\\%s"%(base_path, MSR_DataCarryingSubFolderName, WindNameConvention) + MSR_ShapeFileNameSuffix): #single iteration loop
+                file_to_read=glob.glob("%s\\%s\\%s"%(base_path, MSR_DataCarryingSubFolderName, WindNameConvention) + MSR_ShapeFileNameSuffix)[0]
                 print("Wind:"+file_to_read)
                 gdf_SingleCountry = gpd.read_file(file_to_read)
                 gdf_SingleCountry=gdf_SingleCountry.sort_values(by=['FID'])
 
                 gdf_SingleCountry['CtryName'] = country
+                if AnalysisLevel == "region":
+                    gdf_SingleCountry['Region'] = region            
 
-                dc_WS_ZoneStats_withGWA = zonal_stats(file_to_read,r"%s\%s\%s\%s_GWA_Africa100m_projected.tif"%(Input_MSR_Folder,country,ResourceRasterCarryingSubFolderName,WindNameConvention),stats="count min mean max median sum")
+                dc_WS_ZoneStats_withGWA = zonal_stats(file_to_read,r"%s\%s\%s_GWA_Africa100m_projected.tif"%(base_path,ResourceRasterCarryingSubFolderName,WindNameConvention),stats="count min mean max median sum")
 
                 MeanResource_AverageAcrossMSR=pd.DataFrame(index=gdf_SingleCountry.index,columns=["ZoneMean_m/s"])
                 #MeanResource_AverageAcrossMSR['ZoneMean_m/s'][pd.isnull(MeanResource_AverageAcrossMSR['ZoneMean_m/s'])] = MeanResource_AverageAcrossMSR['ZoneMean_m/s'].mean() # there can be some very rare cases Nonetypes get involved from zonal_stats command
@@ -162,10 +187,12 @@ if Flag_RunWind:
                 gdf = gpd.GeoDataFrame(pd.concat([gdf, gdf_SingleCountry]))
 
         except:
-            print ("Skipped %s"%country)
+            print (f"Skipped {country} {region if 'region' in locals() and region else ''}")
             pd_LogFile=pd_LogFile.append(pd.DataFrame(["%s: Skipped %s" % (WindNameConvention,country)],columns=['Log']))
             pass
+    if AnalysisLevel == "country":
+        gdf.to_file(OutputFolder+"\\Wind_prescreen_country.shp")
+    else:
+        gdf.to_file(OutputFolder+"\\Wind_prescreen_region.shp")
 
-    gdf.to_file(OutputFolder+"\\Wind_prescreen.shp")
-
-    pd_LogFile.to_csv(OutputFolder + '\\'+DateTimeStamp+'Wind_LogFile.csv')
+    pd_LogFile.to_csv(OutputFolder + f'\\{DateTimeStamp}_Wind_{AnalysisLevel}_LogFile.csv')
