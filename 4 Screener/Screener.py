@@ -7,54 +7,76 @@ import geopandas as gpd
 
 def extract_excel(OutputFileName, SourceFolder_Profiles, gdf_destination, REtechnology, ProfilesFileName, Flag_RunExcelExtraction,SolarMultiple=2.1):
     if Flag_RunExcelExtraction==1:
-        countries= gdf_destination.CtryName.unique()
+        
         gdf_destination.rename(columns={"FID":"MSR_ID"} , inplace=True)
+
+        if AnalysisLevel == "country":
+            keys = [(ctry, None) for ctry in gdf_destination.CtryName.unique()]
+        else:
+            keys = list(gdf_destination[["CtryName", "Region"]].drop_duplicates().itertuples(index=False, name=None))
+
 
         if REtechnology=="Solar PV":
             pd_SplatReady=pd.DataFrame()
-            for ctry in countries:
-                pd_Profiles_SingleCountry = pd.read_csv("%s\\%s\\%s %s" % (SourceFolder_Profiles, ctry, ctry, ProfilesFileName))
-                LongitudeColumn=pd_Profiles_SingleCountry['Longitude']
-                LatitudeColumn=pd_Profiles_SingleCountry['Latitude']
-                pd_Profiles_SingleCountry=pd_Profiles_SingleCountry.drop(pd_Profiles_SingleCountry.iloc[:,1:20].columns,axis=1)
-                pd_Profiles_SingleCountry['Longitude']=LongitudeColumn
-                pd_Profiles_SingleCountry['Latitude']=LatitudeColumn
-                pd_SplatReady_SingleCountry = pd.merge(gdf_destination[gdf_destination.CtryName==ctry], pd_Profiles_SingleCountry, on="MSR_ID")
+            for ctry, region in keys:
 
-                pd_SplatReady_SingleCountry = pd_SplatReady_SingleCountry.drop(["geometry"], axis=1)
-                pd_SplatReady= pd_SplatReady.append(pd_SplatReady_SingleCountry)
-                print("Appending csv rows for: %s"%ctry)
+                path = os.path.join(SourceFolder_Profiles, ctry, f"{ctry} {ProfilesFileName}")  
+                
+                pd_Profiles = pd.read_csv(path)
+                LongitudeColumn=pd_Profiles['Longitude']
+                LatitudeColumn=pd_Profiles['Latitude']
+                pd_Profiles=pd_Profiles.drop(pd_Profiles.iloc[:,1:20].columns,axis=1)
+                pd_Profiles['Longitude']=LongitudeColumn
+                pd_Profiles['Latitude']=LatitudeColumn
+
+                if region is None:
+                    gdf_filtered = gdf_destination[gdf_destination.CtryName == ctry]
+                else:
+                    gdf_filtered = gdf_destination[(gdf_destination.CtryName == ctry) &(gdf_destination.Region == region)]
+                    
+                merge = pd.merge(gdf_filtered, pd_Profiles, on="MSR_ID")
+                merge = merge.drop(["geometry"], axis=1)
+                
+                pd_SplatReady= pd_SplatReady.append(merge)
+                print(f"Solar appended: {ctry} {region if region else ''}")
 
             cols = pd_SplatReady.columns.tolist()
-            cols=cols[:1] + cols[-2:] + cols[1:-2]
+            cols=cols
             pd_SplatReady=pd_SplatReady[cols]
 
             pd_SplatReady.to_csv(OutputFileName)
 
         if REtechnology=="Wind":
             pd_SplatReady=pd.DataFrame()
-            for ctry in countries:
-                pd_Profiles_SingleCountry = pd.read_csv("%s\\%s\\%s %s" % (SourceFolder_Profiles, ctry, ctry, ProfilesFileName))
-                LongitudeColumn=pd_Profiles_SingleCountry['Longitude']
-                LatitudeColumn=pd_Profiles_SingleCountry['Latitude']
-                pd_Profiles_SingleCountry=pd_Profiles_SingleCountry.drop(pd_Profiles_SingleCountry.iloc[:,1:19].columns,axis=1)
-                pd_Profiles_SingleCountry['Longitude']=LongitudeColumn
-                pd_Profiles_SingleCountry['Latitude']=LatitudeColumn
+            for ctry, region in keys:
+                path = os.path.join(SourceFolder_Profiles, ctry, f"{ctry} {ProfilesFileName}")
 
-                pd_SplatReady_SingleCountry = pd.merge(gdf_destination[gdf_destination.CtryName==ctry], pd_Profiles_SingleCountry, on="MSR_ID")
+                pd_Profiles = pd.read_csv(path)
+                LongitudeColumn=pd_Profiles['Longitude']
+                LatitudeColumn=pd_Profiles['Latitude']
+                pd_Profiles=pd_Profiles.drop(pd_Profiles.iloc[:,1:19].columns,axis=1)
+                pd_Profiles['Longitude']=LongitudeColumn
+                pd_Profiles['Latitude']=LatitudeColumn
 
-                pd_SplatReady_SingleCountry = pd_SplatReady_SingleCountry.drop(["geometry"], axis=1)
-                pd_SplatReady= pd_SplatReady.append(pd_SplatReady_SingleCountry)
-                print("Appending csv rows for: %s"%ctry)
+                if region is None:
+                    gdf_filtered = gdf_destination[gdf_destination.CtryName == ctry]
+                else:
+                    gdf_filtered = gdf_destination[(gdf_destination.CtryName == ctry) &(gdf_destination.Region == region)]
+
+                merge = pd.merge(gdf_filtered, pd_Profiles, on="MSR_ID")
+                merge = merge.drop(["geometry"], axis=1)
+
+                pd_SplatReady= pd_SplatReady.append(merge)
+                print(f"Wind appended: {ctry} {region if region else ''}")
 
             cols = pd_SplatReady.columns.tolist()
-            cols=cols[:1] + cols[-2:] + cols[1:-2]
+            cols=cols
             pd_SplatReady=pd_SplatReady[cols]
 
             pd_SplatReady.to_csv(OutputFileName)
 
 
-ControlPathsAndConfigurations=pd.read_excel('ControlFile_Screener.xlsx', sheet_name="PathsAndConfig", index_col=0)
+ControlPathsAndConfigurations=pd.read_excel(r"C:\Users\yulia\Desktop\New repository\Model-Supply-Regions-MSR-Toolset2\4 Screener\ControlFile_Screener.xlsx", sheet_name="PathsAndConfig", index_col=0)
 
 OutputFolder=ControlPathsAndConfigurations.loc["OutputFolder"][0]
 if not os.path.isdir(OutputFolder):
@@ -65,15 +87,25 @@ SolarPVSourceFolderCarryingProfiles = ControlPathsAndConfigurations.loc["SolarPV
 WindSourceFolderCarryingProfiles = ControlPathsAndConfigurations.loc["WindSourceFolderCarryingProfiles"][0]
 SolarPV_ProfilesFileName=ControlPathsAndConfigurations.loc["SolarPV_ProfilesFileName"][0]
 WindCF_ProfilesFileName=ControlPathsAndConfigurations.loc["WindCF_ProfilesFileName"][0]
-
+AnalysisLevel = ControlPathsAndConfigurations.loc["AnalysisLevel"][0].strip().lower()
 
 Countries=pd.read_csv(ControlPathsAndConfigurations.loc["FileAddress_CountryNamesList"][0],names=["Ct"])
+Regions = pd.read_csv(ControlPathsAndConfigurations.loc["FileAddress_RegionNamesList"][0],encoding="latin1")
 RegionBoundariesShapeFile=ControlPathsAndConfigurations.loc["RegionBoundariesShapeFile"][0]
+CountryBoundariesShapeFile=ControlPathsAndConfigurations.loc["CountryBoundariesShapeFile"][0]
 
 
 #Pre-Screen file addresses
-SolarPV_PreScreenFile=ControlPathsAndConfigurations.loc["SolarPV_PreScreenFile"][0]
-WindPreScreenFile=ControlPathsAndConfigurations.loc["WindPreScreenFile"][0]
+SolarPV_PreScreenFile_country=ControlPathsAndConfigurations.loc["SolarPV_PreScreenFile_country"][0]
+WindPreScreenFile_country=ControlPathsAndConfigurations.loc["WindPreScreenFile_country"][0]
+SolarPV_PreScreenFile_region=ControlPathsAndConfigurations.loc["SolarPV_PreScreenFile_region"][0]
+WindPreScreenFile_region=ControlPathsAndConfigurations.loc["WindPreScreenFile_region"][0]
+if AnalysisLevel == "country":
+    SolarPV_PreScreenFile = SolarPV_PreScreenFile_country
+    WindPreScreenFile = WindPreScreenFile_country
+elif AnalysisLevel == "region":
+    SolarPV_PreScreenFile = SolarPV_PreScreenFile_region
+    WindPreScreenFile = WindPreScreenFile_region
 
 # All screening is done after sorting MSRs in descending order of LCOE (supply+transmission+road)
 # This script is drafted in such a way that it facilitates the further expansion to any no of screening options
@@ -82,9 +114,9 @@ WindPreScreenFile=ControlPathsAndConfigurations.loc["WindPreScreenFile"][0]
 # 1 Country specific covered area cutoff (Select best MSRs that cover x % of country area)
 
 #read screening options and criteria to apply
-ScreeningOptions=pd.read_excel('ControlFile_Screener.xlsx', sheet_name="Select screening option", index_col=0)
-CountrySpecificCriteriaSolarPV=pd.read_excel('ControlFile_Screener.xlsx', sheet_name="SolarPV country specific", index_col=0)
-CountrySpecificCriteriaWind=pd.read_excel('ControlFile_Screener.xlsx', sheet_name="Wind country specific", index_col=0)
+ScreeningOptions=pd.read_excel(r"C:\Users\yulia\Desktop\New repository\Model-Supply-Regions-MSR-Toolset2\4 Screener\ControlFile_Screener.xlsx", sheet_name="Select screening option", index_col=0)
+CountrySpecificCriteriaSolarPV=pd.read_excel(r"C:\Users\yulia\Desktop\New repository\Model-Supply-Regions-MSR-Toolset2\4 Screener\ControlFile_Screener.xlsx", sheet_name="SolarPV country specific", index_col=0)
+CountrySpecificCriteriaWind=pd.read_excel(r"C:\Users\yulia\Desktop\New repository\Model-Supply-Regions-MSR-Toolset2\4 Screener\ControlFile_Screener.xlsx", sheet_name="Wind country specific", index_col=0)
 
 
 
@@ -123,28 +155,58 @@ if Flag_RunSolarPV:
         if method==1:
             gdf_destination = gpd.GeoDataFrame()
 
-            for i in range(0, len(Countries)):
-                country = Countries.Ct[i]
-                country_withoutSpace = country.replace(" ", "")
+            if AnalysisLevel == "country":
+                iterator = [(ctry.strip(), None) for ctry in Countries["Ct"]]
+            else:
+                iterator = list(Regions[["Country", "Region"]].drop_duplicates().itertuples(index=False, name=None))
+                            
 
-                gdf_RegionBoundaries = gpd.read_file(RegionBoundariesShapeFile)
-                CountryArea_kM2=gdf_RegionBoundaries[gdf_RegionBoundaries.name == country].to_crs("ESRI:54009").area.iloc[0] / 1000000
-                cutoff=(CountrySpecificCriteriaSolarPV.loc[country][0]/100)*CountryArea_kM2
+            for Country, Region in iterator:
+                Country = Country.strip()          
+                CountryKey = Country.replace(" ", "")
 
-                gdf_SingleCountry = gdf_source[gdf_source.CtryName == country_withoutSpace]
-                gdf_SingleCountry['CumAreakM2'] = gdf_SingleCountry.AreakM2.cumsum()
+                if Region:
+                    Region = Region.strip()
+                    RegionKey = Region.replace(" ", "")
 
-                gdf_SingleCountry = gdf_SingleCountry[gdf_SingleCountry['CumAreakM2'] <= cutoff]
+                if AnalysisLevel == "country":
+                    gdf_boundaries = gpd.read_file(CountryBoundariesShapeFile)
+                    gdf_selected = gdf_boundaries[gdf_boundaries.name == Country]
+
+                elif AnalysisLevel == "region":
+                    gdf_boundaries = gpd.read_file(RegionBoundariesShapeFile)
+                    gdf_selected = gdf_boundaries[(gdf_boundaries.name == Region) & (gdf_boundaries.geonunit == Country)] 
+
+                Area_kM2=gdf_selected.to_crs("ESRI:54009").area.iloc[0] / 1000000
+                cutoff=(CountrySpecificCriteriaSolarPV.loc[Country][0]/100)*Area_kM2
+
+                if AnalysisLevel == "country":
+                    gdf_filtered = gdf_source[gdf_source.CtryName == CountryKey]
+                else:
+                    gdf_filtered = gdf_source[(gdf_source.CtryName == CountryKey) & (gdf_source.Region == RegionKey)]                
+
+                gdf_filtered['CumAreakM2'] = gdf_filtered.AreakM2.cumsum()
+
+                gdf_filtered = gdf_filtered[gdf_filtered['CumAreakM2'] <= cutoff]
 
 
-                gdf_destination=gpd.GeoDataFrame(pd.concat([gdf_destination, gdf_SingleCountry]))
-                print (country, CountryArea_kM2)
+                gdf_destination=gpd.GeoDataFrame(pd.concat([gdf_destination, gdf_filtered]))
+                print (f"Processing: {Country}" + (f" - {Region}" if Region else ""))
+
 
             gdf_destination=gdf_destination.drop(['CumAreakM2'], axis=1)
-            gdf_destination.to_file(OutputFolder + "\\SolarPV_BestMSRsToCover5%CountryArea.shp")
-            extract_excel(OutputFolder + "\\SolarPV_BestMSRsToCover5%CountryArea.csv",
-            SolarPVSourceFolderCarryingProfiles, gdf_destination, REtechnology, SolarPV_ProfilesFileName,
-            Flag_RunExcelExtraction)
+            
+            if AnalysisLevel == "country":
+                suffix = "Country"
+            else:
+                suffix = "Region"
+
+            shp_path = os.path.join(OutputFolder, f"{REtechnology}_BestMSRs_{suffix}.shp")
+            csv_path = os.path.join(OutputFolder, f"{REtechnology}_BestMSRs_{suffix}.csv")
+
+            gdf_destination.to_file(shp_path)
+            extract_excel(csv_path, SolarPVSourceFolderCarryingProfiles, gdf_destination, REtechnology, SolarPV_ProfilesFileName,
+                          Flag_RunExcelExtraction)
 
 #Wind MSR Screener
 if Flag_RunWind:
@@ -168,24 +230,57 @@ if Flag_RunWind:
         if method==1:
             gdf_destination = gpd.GeoDataFrame()
 
-            for i in range(0, len(Countries)):
-                country = Countries.Ct[i]
-                country_withoutSpace = country.replace(" ", "")
+            if AnalysisLevel == "country":
+                iterator = [(ctry.strip(), None) for ctry in Countries["Ct"]]
+            else:
+                iterator = list(Regions[["Country", "Region"]].drop_duplicates().itertuples(index=False, name=None))
+                
+            for Country, Region in iterator:
+                Country = Country.strip()
+                CountryKey = Country.replace(" ", "")
+                if Region:
+                    Region = Region.strip()
+                    RegionKey = Region.replace(" ", "")
 
-                gdf_RegionBoundaries = gpd.read_file(RegionBoundariesShapeFile)
-                CountryArea_kM2=gdf_RegionBoundaries[gdf_RegionBoundaries.name == country].to_crs("ESRI:54009").area.iloc[0] / 1000000
-                cutoff=(CountrySpecificCriteriaSolarPV.loc[country][0]/100)*CountryArea_kM2
+                if AnalysisLevel == "country":
+                    gdf_boundaries = gpd.read_file(CountryBoundariesShapeFile)
+                    gdf_selected = gdf_boundaries[gdf_boundaries.name == Country]
 
-                gdf_SingleCountry = gdf_source[gdf_source.CtryName == country_withoutSpace]
-                gdf_SingleCountry['CumAreakM2'] = gdf_SingleCountry.AreakM2.cumsum()
+                elif AnalysisLevel == "region":
+                    gdf_boundaries = gpd.read_file(RegionBoundariesShapeFile)
+                    gdf_selected = gdf_boundaries[(gdf_boundaries.name == Region) & (gdf_boundaries.geonunit == Country)] 
 
-                gdf_SingleCountry = gdf_SingleCountry[gdf_SingleCountry['CumAreakM2'] <= cutoff]
+                Area_kM2=gdf_selected.to_crs("ESRI:54009").area.iloc[0] / 1000000
+                cutoff=(CountrySpecificCriteriaSolarPV.loc[Country][0]/100)*Area_kM2
 
-                gdf_destination=gpd.GeoDataFrame(pd.concat([gdf_destination, gdf_SingleCountry]))
-                print (country, CountryArea_kM2)
+                if AnalysisLevel == "country":
+                    gdf_filtered = gdf_source[gdf_source.CtryName == CountryKey]
+                else:
+                    gdf_filtered = gdf_source[(gdf_source.CtryName == CountryKey) & (gdf_source.Region == RegionKey)]                
+
+                gdf_filtered['CumAreakM2'] = gdf_filtered.AreakM2.cumsum()
+
+                gdf_filtered = gdf_filtered[gdf_filtered['CumAreakM2'] <= cutoff]
+
+                gdf_destination=gpd.GeoDataFrame(pd.concat([gdf_destination, gdf_filtered]))
+                print (f"Processing: {Country}" + (f" - {Region}" if Region else ""))
 
             gdf_destination=gdf_destination.drop(['CumAreakM2'], axis=1)
-            gdf_destination.to_file(OutputFolder + "\\Wind_BestMSRsToCover5%CountryArea.shp")
-            extract_excel(OutputFolder + "\\Wind_BestMSRsToCover5%CountryArea.csv",
-            WindSourceFolderCarryingProfiles, gdf_destination, REtechnology, WindCF_ProfilesFileName,
-            Flag_RunExcelExtraction)
+            
+            if AnalysisLevel == "country":
+                suffix = "Country"
+            else:
+                suffix = "Region"
+
+            shp_path = os.path.join(OutputFolder, f"{REtechnology}_BestMSRs_{suffix}.shp")
+            csv_path = os.path.join(OutputFolder, f"{REtechnology}_BestMSRs_{suffix}.csv")
+
+            gdf_destination.to_file(shp_path)
+            extract_excel(
+                csv_path, 
+                WindSourceFolderCarryingProfiles, 
+                gdf_destination, 
+                REtechnology, 
+                WindCF_ProfilesFileName,
+                Flag_RunExcelExtraction
+            )
