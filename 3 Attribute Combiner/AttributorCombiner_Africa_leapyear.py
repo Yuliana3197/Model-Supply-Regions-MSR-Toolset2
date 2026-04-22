@@ -11,10 +11,12 @@ import time
 
 
 #Read control input file
-ControlPathsAndNames=pd.read_excel('ControlFile_AttributorCombiner.xlsx', sheet_name="PathsAndNames", index_col=0)
-CostParameters=pd.read_excel('ControlFile_AttributorCombiner.xlsx', sheet_name="CostParameters", index_col=0)
-ControlConfigurations=pd.read_excel('ControlFile_AttributorCombiner.xlsx', sheet_name="configurations", index_col=0)
+ControlPathsAndNames=pd.read_excel(r"C:\Users\yulia\Desktop\New repository\Model-Supply-Regions-MSR-Toolset2\3 Attribute Combiner\ControlFile_AttributorCombiner.xlsx", sheet_name="PathsAndNames", index_col=0)
+CostParameters=pd.read_excel(r"C:\Users\yulia\Desktop\New repository\Model-Supply-Regions-MSR-Toolset2\3 Attribute Combiner\ControlFile_AttributorCombiner.xlsx", sheet_name="CostParameters", index_col=0)
+ControlConfigurations=pd.read_excel(r"C:\Users\yulia\Desktop\New repository\Model-Supply-Regions-MSR-Toolset2\3 Attribute Combiner\ControlFile_AttributorCombiner.xlsx", sheet_name="configurations", index_col=0)
 Countries=pd.read_csv(ControlPathsAndNames.loc["FileAddress_CountryNamesList"][0],names=["Ct"])
+Regions = pd.read_csv(ControlPathsAndNames.loc["FileAddress_RegionNamesList"][0],encoding="latin1")
+AnalysisLevel = ControlConfigurations.loc["AnalysisLevel"][0].strip().lower()
 Input_MSR_Folder=ControlPathsAndNames.loc["Input_MSR_Folder"][0]
 OutputFolder=ControlPathsAndNames.loc["OutputFolder"][0]
 MSR_ShapeFileNameSuffix=ControlPathsAndNames.loc["MSR_ShapeFileNameSuffix"][0]
