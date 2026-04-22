@@ -823,7 +823,6 @@ for CountryName, RegionName_withSpaces in iterator:
                 print("load center related attributes inserted")
 
     # Extracts landuse, elevation statistics, and climate from raster datasets
-                print("Computing land-use distribution per MSR")
 
                 gpd_MSRs['LandUseDist'] = gpd_MSRs.geometry.apply(
                     lambda geom: LandCoverDistributionForMSR(
@@ -839,16 +838,14 @@ for CountryName, RegionName_withSpaces in iterator:
                 # ---- Dominant land-use class ----
                 gpd_MSRs['LU_Dominant_Class'] = (LandUseDF.idxmax(axis=1).str.replace("LU_", "", regex=False).astype(int))
                 gpd_MSRs['LU_Dominant_Share'] = LandUseDF.max(axis=1)
-
-                print("Computing elevation statistics per MSR")
+                print("Computing land-use distribution per MSR")
 
                 gpd_MSRs[['Elev_mean', 'Elev_min', 'Elev_max']] = (
                     gpd_MSRs.geometry
                     .apply(lambda geom: ElevationStatsForMSR(geom, f"{SubfolderStage1_Clipping}{RE_Technology}_{FileName_Elevation}_projected.tif"))
                     .apply(pd.Series)
                 )
-
-                print("Computing Köppen climate distribution per MSR")
+                print("Computing elevation statistics per MSR")
 
                 gpd_MSRs['KoppenDist'] = gpd_MSRs.geometry.apply(
                     lambda geom: KoppenDistributionForMSR(
@@ -864,8 +861,8 @@ for CountryName, RegionName_withSpaces in iterator:
                 # ---- Dominant Köppen climate class ----
                 gpd_MSRs['KC_Dominant_Class'] = (KoppenDF.idxmax(axis=1).str.replace("KC_", "", regex=False).astype(int))
                 gpd_MSRs['KC_Dominant_Share'] = KoppenDF.max(axis=1)
+                print("Computing Köppen climate distribution per MSR")
 
-                print("load center related attributes inserted")
                 gpd_MSRs.to_file(Path_FinalMSRs)
 
 
