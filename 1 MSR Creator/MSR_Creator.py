@@ -276,18 +276,20 @@ For detail on methodology, please consult the paper: Link soon coming
 
 '''
 #Read control input file
-ControlDataSetNames=pd.read_excel('ControlFile_MSRCreator.xlsx', sheet_name="input dataset names", index_col=0)
-ControlCountryWiseInputs=pd.read_excel('ControlFile_MSRCreator.xlsx', sheet_name="country wise inputs", index_col=0)
-ControlConfigurations=pd.read_excel('ControlFile_MSRCreator.xlsx', sheet_name="Configurations", index_col=0)
-ControlPaths=pd.read_excel('ControlFile_MSRCreator.xlsx', sheet_name="Paths", index_col=0)
-ControlAnalysisInputs=pd.read_excel('ControlFile_MSRCreator.xlsx', sheet_name="AnalysisInputs", index_col=0).transpose().drop(index='Comments')
+ControlDataSetNames=pd.read_excel(r"C:\Users\yulia\Desktop\New repository\Model-Supply-Regions-MSR-Toolset2\1 MSR Creator\ControlFile_MSRCreator.xlsx", sheet_name="input dataset names", index_col=0)
+ControlCountryWiseInputs=pd.read_excel(r"C:\Users\yulia\Desktop\New repository\Model-Supply-Regions-MSR-Toolset2\1 MSR Creator\ControlFile_MSRCreator.xlsx", sheet_name="country wise inputs", index_col=0)
+ControlConfigurations=pd.read_excel(r"C:\Users\yulia\Desktop\New repository\Model-Supply-Regions-MSR-Toolset2\1 MSR Creator\ControlFile_MSRCreator.xlsx", sheet_name="Configurations", index_col=0)
+ControlPaths=pd.read_excel(r"C:\Users\yulia\Desktop\New repository\Model-Supply-Regions-MSR-Toolset2\1 MSR Creator\ControlFile_MSRCreator.xlsx", sheet_name="Paths", index_col=0)
+ControlAnalysisInputs=pd.read_excel(r"C:\Users\yulia\Desktop\New repository\Model-Supply-Regions-MSR-Toolset2\1 MSR Creator\ControlFile_MSRCreator.xlsx", sheet_name="AnalysisInputs", index_col=0).transpose().drop(index='Comments')
 
 HomeDirectory=str(ControlPaths.loc["HomeDirectory"][0])
 InputSpatialDatasetsFolder = HomeDirectory + ControlPaths.loc["FolderAddress_InputSpatialDatasets"][0]
 
 #Fetch run configuration
 AllCountries=pd.read_csv(ControlPaths.loc["FileAddress_CountryNamesList"][0],names=["Ct"])
+AllRegions = pd.read_csv(ControlPaths.loc["FileAddress_RegionNamesList"][0],encoding="latin1")
 RE_Technology = ControlConfigurations.loc["RE_Technology"][0]
+AnalysisLevel = ControlConfigurations.loc["AnalysisLevel"][0].strip().lower()
 RoadType = ControlConfigurations.loc["RoadType (Include till this type)"][0]
 Flag_RelaxThresholdsForResourceLagingCountries = ControlConfigurations.loc["Flag_RelaxThresholdsForResourceLagingCountries"][0]
 Flag_RoadsBufferedSearch = ControlConfigurations.loc["Flag_RoadsBufferedSearch"][0]
@@ -317,11 +319,12 @@ FileName_TransmissionGrid=ControlDataSetNames.loc["FileName_TransmissionGrid"][0
 FileName_ContinentDistanceSurface_Tgrid=ControlDataSetNames.loc["FileName_ContinentDistanceSurface_Tgrid"][0]
 FileName_DistributionGrid=ControlDataSetNames.loc["FileName_DistributionGrid"][0]
 FileName_CountryBoundaries=ControlDataSetNames.loc["FileName_CountryBoundaries"][0]
+FileName_RegionBoundaries=ControlDataSetNames.loc["FileName_RegionBoundaries"][0]
 FileName_GHI_Map=ControlDataSetNames.loc["FileName_GHI_Map"][0]
 FileName_DNI_Map = ControlDataSetNames.loc["FileName_DNI_Map"][0]
 FileName_WindSpeedMap=ControlDataSetNames.loc["FileName_WindSpeedMap"][0]
 FileName_WaterBodies=ControlDataSetNames.loc["FileName_WaterBodies"][0]
-
+FileName_ClimateZones=ControlDataSetNames.loc["FileName_ClimateZones"][0]
 
 
 #assign RE tech related inputs
@@ -374,6 +377,7 @@ if RE_Technology == 'wind':
 rotor_diammeter, turbine_nameplate_capacity = int(ControlAnalysisInputs.WindTurbineRotorDiameter_meters), int(ControlAnalysisInputs.WindTurbineCapacity_Watts)
 
 gdf_CountryBoundaries=gpd.read_file(InputSpatialDatasetsFolder+FileName_CountryBoundaries+".shp")
+gdf_RegionBoundaries = gpd.read_file(InputSpatialDatasetsFolder + FileName_RegionBoundaries + ".shp")
 SubfolderCountryMapsForClipping=HomeDirectory+r"\RegionBoundaryMaps"
 
 
