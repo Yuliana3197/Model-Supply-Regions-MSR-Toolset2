@@ -207,9 +207,9 @@ def CreateLocalTimeProfile(pd_UTC, pd_CountryUTC_offsets, country_withspaces):
 #Start of the main program
 
 #Read control input file
-ControlPathsAndNames=pd.read_excel(r"C:\Users\yulia\Desktop\New repository\Model-Supply-Regions-MSR-Toolset2\2 ProfileGenerator\ControlFile_ProfileGenerator.xlsx", sheet_name="PathsAndNames", index_col=0)
-ControlConfigurations=pd.read_excel(r"C:\Users\yulia\Desktop\New repository\Model-Supply-Regions-MSR-Toolset2\2 ProfileGenerator\ControlFile_ProfileGenerator.xlsx", sheet_name="Configurations", index_col=0)
-pd_CountryUTC_offsets=pd.read_excel(r"C:\Users\yulia\Desktop\New repository\Model-Supply-Regions-MSR-Toolset2\2 ProfileGenerator\ControlFile_ProfileGenerator.xlsx", sheet_name="CountryUTC_Offset_InUse")
+ControlPathsAndNames=pd.read_excel(r"C:\Users\yulia\Desktop\New repository\Model-Supply-Regions-MSR-Toolset2\2 Profile Generator\ControlFile_ProfileGenerator.xlsx", sheet_name="PathsAndNames", index_col=0)
+ControlConfigurations=pd.read_excel(r"C:\Users\yulia\Desktop\New repository\Model-Supply-Regions-MSR-Toolset2\2 Profile Generator\ControlFile_ProfileGenerator.xlsx", sheet_name="Configurations", index_col=0)
+pd_CountryUTC_offsets=pd.read_excel(r"C:\Users\yulia\Desktop\New repository\Model-Supply-Regions-MSR-Toolset2\2 Profile Generator\ControlFile_ProfileGenerator.xlsx", sheet_name="CountryUTC_Offset_InUse")
 
 #load paths
 np_ERA5Data_inst=Dataset(ControlPathsAndNames.loc["ERA5DataFilePath_inst"][0])
